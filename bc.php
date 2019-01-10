@@ -19,46 +19,6 @@ use Yii;
 trait Breadcrumb
 {
 
-    public $myArray = [
-        'before_url' => [
-            'before_url' => [
-                'before_url' => [
-                    'before_url' => [
-                        'before_url' => [
-                            'before_url' => [
-                                'before_url' => [
-
-
-                                    'before_url' => [
-
-                                    ],
-                                    'has_buffer' => 0,
-                                    'url_value' => '/test1/test111'
-
-
-                                ],
-                                'has_buffer' => 1, // ========
-                                'url_value' => '/test1/test1'
-                            ],
-                            'has_buffer' => 0,
-                            'url_value' => '/test2/test3'
-                        ],
-                        'has_buffer' => 0,
-                        'url_value' => '/test2/test2'
-                    ],
-                    'has_buffer' => 0,
-                    'url_value' => '/test2/test1'
-                ],
-                'has_buffer' => 0,
-                'url_value' => '/test1/test3'
-            ],
-            'has_buffer' => 0,
-            'url_value' => '/test1/test2'
-        ],
-        'has_buffer' => 0,
-        'url_value' => '/test1/test1'
-    ];
-
     // *shh* main URLs that We Reset The BreadCrumb Session In Bellow Positions
     private static $master_urls = [
         'home' => '/',
@@ -84,22 +44,13 @@ trait Breadcrumb
     {
         $new_url = self::get_new_url();
         $_breadcrumb = self::get_session($new_url);
-        $reset_result = false;
 
         if (self::does_need_reset($new_url)) {
             self::reset($_breadcrumb, $new_url);
-            $reset_result = true;
-        } // just for master urls
-
-        if ($reset_result) {
             echo('whoops! problem in reset breadcrumb');
             return false;
         }
 
-        var_dump(self::does_new_url_exist_in_current_breadcrumb($_breadcrumb, $new_url));
-//        var_dump(self::make_new_breadcrumb($_breadcrumb, $new_url)); die();
-        echo('<br>');
-//        die();
         return (self::does_new_url_exist_in_current_breadcrumb($_breadcrumb, $new_url)) ?
             self::make_new_broken_breadcrumb($_breadcrumb, $new_url) : self::make_new_breadcrumb($_breadcrumb, $new_url);
     }
@@ -117,7 +68,6 @@ trait Breadcrumb
 
     public static function reset($breadcrumb, $new_url)
     {
-        echo '*****RESET******';
         $buffer = $breadcrumb;
         $breadcrumb = [
             'has_buffer' => 1,
@@ -129,29 +79,10 @@ trait Breadcrumb
     }
 
 
-    protected static function update_session($array)
+    protected static function update_session($new_bc_array)
     {
-        echo '<br>';
-        echo '>>>>>>>>>>>>>>>>>>>>>>Passed Array (NEW)>>>>>>>>>>>>>>>>>>>';
-        echo '<br>';
-        $tt = $array;
-        while ($tt['before_url']) {
-            var_dump($tt);
-            $tt = $tt['before_url'];
-        }
-        echo '<br>';
-        echo '>>>>>>>>>>>>>>>>>>>>>>Old Session(Current)>>>>>>>>>>>>>>>>>>>';
-        echo '<br>';
-        $tt = $_SESSION[self::$target_part];
-        while ($tt['before_url']) {
-            var_dump($tt);
-            $tt = $tt['before_url'];
-        }
-        echo '<br>';
-        echo '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>';
-        echo '<br>';
-
-        return $_SESSION[self::$target_part] = $array;
+        $_SESSION[self::$target_part] = $new_bc_array;
+        return $_SESSION[self::$target_part];
     }
 
 
@@ -163,17 +94,18 @@ trait Breadcrumb
         if ($session->isActive)
             $session->open();// open a session
 
-        if (empty($session[self::$target_part])) {
+        $breadcrumb_session_value = isset($session[self::$target_part])?$session[self::$target_part]:[];
+
+        if (!$breadcrumb_session_value) {
             echo 'empty session for breadcrumb';
-            self::update_session([
+            $breadcrumb_session_value = self::update_session([
                 'has_buffer' => 0,
                 'before_url' => [],
                 'url_value' => $new_url
             ]);
         }
 
-
-        return $session[self::$target_part];
+        return $breadcrumb_session_value;
     }
 
 
@@ -199,101 +131,62 @@ trait Breadcrumb
     {
         $step = 0;
         $copy_breadcrumb = $breadcrumb;
-//        print_r($breadcrumb); die();
-//        $flag = '123';
 
         while (!empty($copy_breadcrumb)) {
             ++$step;
 
-            if ($copy_breadcrumb['url_value'] == $new_url){
-//                $flag = 'here';
+            if ($copy_breadcrumb['url_value'] == $new_url)
                 break; //goto target_place;
-            }
 
             $copy_breadcrumb = $copy_breadcrumb['before_url'];
         }
 
-//        print_r($flag); die();
-//        $tt = self::find_and_break_breadcrumb_chain($breadcrumb, $step);
-        $tt = self::handleNestedElement($breadcrumb, $step,[]);
 
-        print_r($tt); die();
+        self::handleNestedElement($breadcrumb, $step, []); //update
 
-        return self::update_session($tt);
+        return self::update_session($breadcrumb);
     }
 
-//deleted
-    protected static function find_and_break_breadcrumb_chain(&$array, $step)
-    {
 
-        $keys = '';
-        while($step){
-            $keys .= "['before_url']";
-            --$step;
-        }
-
-        $keys = explode('][', trim($keys, '[]'));
-
-        $cpy_array = &$array;
-
-        foreach ($keys as $key) {
-            if (!array_key_exists($key, $cpy_array)) {
-//                echo $key;
-//                echo $cpy_array;
-//                die('die');
-//                $cpy_array[$key] = [];
-            }
-//            $cpy_array = &$cpy_array[$key];
-        }
-        $cpy_array = [];
-//        print_r($array); die();
-        return $cpy_array;
-
-//        if (empty( $array ))
-//            die('smth went wrong in find broken bc');
-//
-//        if ($step==0)//  !$step
-//        {
-//            $array['before_url'] = [];
-//            return $array;
-//        }
-//        else
-//            return self::find_and_break_breadcrumb_chain($array['before_url'], --$step);
-
-    }
 
     public static function handleNestedElement(array &$array, $step, $value = null)
     {
-        $tmp = &$array;
-        $keys = '';
+        $tmp = &$array;//copy breadcrumb
 
-        while($step){
-            $keys .= "['before_url']";
+        // make keys
+        $keys = '';
+        while ($step) {
+            $keys .= "[before_url]";
             --$step;
         }
-
         $keys = explode('][', trim($keys, '[]'));
+        // EO make keys
 
         while (count($keys) > 0) {
             $key = array_shift($keys);
-            if (! is_array($tmp)) {
+
+            if (!is_array($tmp)) {
                 if (is_null($value)) {
                     return null;
                 } else {
                     $tmp = [];
                 }
             }
-            if (! isset($tmp[$key]) && is_null($value)) {
+
+            if (!isset($tmp[$key]) && is_null($value)) {
                 return null;
             }
+
             $tmp = &$tmp[$key];
         }
-        if (is_null($value)) {
+
+        if (is_null($value))
             return $tmp;
-        } else {
-            $tmp = $value;
-            return true;
-        }
+
+
+        $tmp = $value;
+        return true;
+
     }
 
 
@@ -343,11 +236,6 @@ trait Breadcrumb
     }
 
 
-
-
-
-
-
     public static function get()
     {
         return self::get_breadcrumb();
@@ -372,7 +260,6 @@ trait Breadcrumb
         if (empty($breadcrumb['url_value']))//
             return [];
 
-//        print_r($breadcrumb); die();
         do {
             $_breadcrumb[] = $breadcrumb['url_value'];
             $breadcrumb = $breadcrumb['before_url'];
@@ -381,5 +268,51 @@ trait Breadcrumb
         return $_breadcrumb;
     }
 
+    public static function ()
+    {
+
+    }
+
+//
+//
+//    //deleted
+//    protected static function find_and_break_breadcrumb_chain(&$array, $step)
+//    {
+//
+//        $keys = '';
+//        while ($step) {
+//            $keys .= "['before_url']";
+//            --$step;
+//        }
+//
+//        $keys = explode('][', trim($keys, '[]'));
+//
+//        $cpy_array = &$array;
+//
+//        foreach ($keys as $key) {
+//            if (!array_key_exists($key, $cpy_array)) {
+////                echo $key;
+////                echo $cpy_array;
+////                die('die');
+////                $cpy_array[$key] = [];
+//            }
+////            $cpy_array = &$cpy_array[$key];
+//        }
+//        $cpy_array = [];
+////        print_r($array); die();
+//        return $cpy_array;
+//
+////        if (empty( $array ))
+////            die('smth went wrong in find broken bc');
+////
+////        if ($step==0)//  !$step
+////        {
+////            $array['before_url'] = [];
+////            return $array;
+////        }
+////        else
+////            return self::find_and_break_breadcrumb_chain($array['before_url'], --$step);
+//
+//    }
 
 }
