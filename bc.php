@@ -6,9 +6,6 @@
  * Time: 10:16 AM
  */
 
-namespace app\components\traits;
-
-use Yii;
 
 /**
  * @property array $data
@@ -273,46 +270,6 @@ trait Breadcrumb
 
     }
 
-//
-//
-//    //deleted
-//    protected static function find_and_break_breadcrumb_chain(&$array, $step)
-//    {
-//
-//        $keys = '';
-//        while ($step) {
-//            $keys .= "['before_url']";
-//            --$step;
-//        }
-//
-//        $keys = explode('][', trim($keys, '[]'));
-//
-//        $cpy_array = &$array;
-//
-//        foreach ($keys as $key) {
-//            if (!array_key_exists($key, $cpy_array)) {
-////                echo $key;
-////                echo $cpy_array;
-////                die('die');
-////                $cpy_array[$key] = [];
-//            }
-////            $cpy_array = &$cpy_array[$key];
-//        }
-//        $cpy_array = [];
-////        print_r($array); die();
-//        return $cpy_array;
-//
-////        if (empty( $array ))
-////            die('smth went wrong in find broken bc');
-////
-////        if ($step==0)//  !$step
-////        {
-////            $array['before_url'] = [];
-////            return $array;
-////        }
-////        else
-////            return self::find_and_break_breadcrumb_chain($array['before_url'], --$step);
-//
-//    }
+
 
 }
