@@ -65,6 +65,9 @@ trait Breadcrumb
     ];
 
 
+    private static $static_url_parts = ['all', 'exhibition', 'product', 'view', 'news', 'search'];
+
+
     /**
      *  The Session Name
      * @var string
@@ -96,9 +99,15 @@ trait Breadcrumb
 
         // *shh* Check Does New Breadcrumb is Member of Master URLs
         if (self::does_need_reset($new_url)) {
-            self::reset( $new_url, $title);
+            self::reset($new_url, $title);
             return [];
         }
+
+        // todo : comment
+//        var_dump( $_step = self::is_familiar_url_with_old_ones($_breadcrumb,$new_url) );
+//        die();
+        if ($_step = self::is_familiar_url_with_old_ones($_breadcrumb,$new_url))
+            return self::make_new_broken_familiar_breadcrumb($_breadcrumb, $new_url, $title, $_step);
 
         // *shh*  check Is New Breadcrumb now Exist In Breadcrumb or Not,
         // If Now Its Exist, We Could Delete The Newer Breadcrumbs until The New Url($new_url) and Call ( make_new_broken_breadcrumb() )
@@ -234,6 +243,23 @@ trait Breadcrumb
         }
 
         self::handleNestedElement($breadcrumb, $step, []); //update
+
+        return self::update_session($breadcrumb);
+    }
+
+
+
+    protected static function make_new_broken_familiar_breadcrumb($breadcrumb, $new_url, $title, $step)
+    {
+
+        $_new_bc = [
+            'has_buffer' => 0,
+            'before_url' => [],
+            'url_value' => $new_url,
+            'title' => $title
+        ];
+
+        self::handleNestedElement($breadcrumb, $step-1, $_new_bc); //update array (bc)
 
         return self::update_session($breadcrumb);
     }
@@ -412,20 +438,6 @@ trait Breadcrumb
 
 
     /**
-     * ...
-     * @param $breadcrumb
-     * @param $new_url
-     * @return bool
-     */
-    public function is_familiar_url_with_old_ones($breadcrumb, $new_url)
-    {
-        foreach (self::$master_urls as $master_url)
-            if ($master_url['url'] == $new_url)
-                return true;
-    }
-
-
-    /**
      *  *shh* generate current breadcrumb(exist in session);
      *  Two way are exist :
      *  1.use default yii2 breadcrumb widget ( Enable Way == Current Code)
@@ -436,8 +448,7 @@ trait Breadcrumb
     public static function generate(&$_this)
     {
         $bc_array = self::get();
-//        echo '<a href="'.$bc_array[0]['url'].'"> test</a> ';
-//        print_r($bc_array); die();
+
         $bc_len = count($bc_array) - 1;
         $step = 0;
         $_this->params['breadcrumbs'][] = ['label' => Yii::t('app', 'صفحه اصلی'), 'url' => Url::home()];
@@ -480,5 +491,66 @@ trait Breadcrumb
 //        return $breadcrumb_html_code;
     }
 
+
+    public static function is_familiar_url_with_old_ones($breadcrumb, $new_url)
+    {
+        $_step = 0;
+
+        if (empty($breadcrumb['url_value']))
+            return 0;//false or $_step
+
+
+        $new_url = str_replace('?', '/', $new_url);
+        $new_url = str_replace('&', '/', $new_url);
+        $_exploded_new_url = explode("/", $new_url);
+        $_exploded_new_url_count = count($_exploded_new_url);
+
+
+        do {
+            ++$_step;
+            $_bc_value = $breadcrumb['url_value'];
+            $_bc_value = str_replace('?', '/', $_bc_value);
+            $_bc_value = str_replace('&', '/', $_bc_value);
+            $_exploded_bc_value = explode("/", $_bc_value);
+            $_exploded_bc_value_count = count($_exploded_bc_value);
+
+//            print_r($new_url); echo '<br>';
+//            print_r($_exploded_new_url);echo '<br>';
+//            print_r($_bc_value); echo '<br>';
+//            print_r($_exploded_bc_value); echo '<br> ============= <br>';
+
+            if ($_exploded_new_url_count == $_exploded_bc_value_count)
+            {
+                $_success_state = 0;
+
+                for ($i = 0;$i < $_exploded_new_url_count;++$i){
+
+//                    echo '<************>';
+//                    print_r($_exploded_new_url[$i]); echo '<br>';
+//                    print_r($_exploded_bc_value[$i]);echo '<br>';
+//                    echo '<************>';
+
+                    if ($_exploded_new_url[$i] == $_exploded_bc_value[$i]){
+                        ++$_success_state;
+                    }
+                    else{
+                        if( array_search($_exploded_bc_value[$i],self::$static_url_parts) )
+                            return false;
+                        else
+                            ++$_success_state;
+
+                    }
+
+                }
+
+                if ($_success_state == $_exploded_new_url_count)
+                    return $_step;
+            }
+
+            $breadcrumb = $breadcrumb['before_url'];
+        } while (!empty($breadcrumb));
+
+        return 0;// false || $_step
+    }
 
 }
