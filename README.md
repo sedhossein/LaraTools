@@ -3,7 +3,7 @@ LaraTools, has the news, packages and Documents about laravel .
 
 
 
-you can follow this, in Telegram Chanel
+you can follow us in our @telegram channel
 https://t.me/laratools
 
 
